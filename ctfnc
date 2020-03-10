@@ -1,3 +1,61 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 import argparse
-from src.main import main
+import sys
+
+import lib.dev
+import lib.prod
+import lib.version
+import lib.validate_config
+import lib.generate
+
+VERSION = '0.1.0'
+CONFIG_FILE = 'config/config.py'
+
+def main():
+    parser = argparse.ArgumentParser(description='Run your CTF challenges in production easily')
+    parser.add_argument('mode',
+                        choices=['dev', 'prod', 'generate'],
+                        help='Specify whether to run in dev or prod.',
+                        default='dev')
+    parser.add_argument('generatable',
+                        choices=['configfile', 'main'],
+                        nargs='?',
+                        help='when mode is `generate`, specify what to generate.')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + lib.version.VERSION)
+    args = parser.parse_args()
+    if args.mode == 'generate':
+        lib.generate.generate(parser, args)
+        return
+
+    runnable = lib.prod.run_prod if args.mode == 'prod' else lib.dev.run_dev
+    try:
+        from config import config
+    except Exception as e:
+        print('Could not load configuration file.')
+        print('Check if you have defined a configuration file in config/config.py.')
+        print(f'Underlying exception: {e}')
+        return
+
+    validated_config: lib.validate_config.Config = None
+    try:
+        validated_config = lib.validate_config.validate_config(config)
+    except Exception as e:
+        print('Could not validate configuration file: some things may be missing.')
+        print(f'You can try generating a new one by using {sys.argv[0]} generate configfile')
+        print(f'Underlying exception: {e}')
+        return
+
+    try:
+        from src.main import main
+    except Exception as e:
+        print(type(e))
+        print('Could not load main function. Check if you have defined a main function in \'src/main.py\'')
+        print(f'Underlying exception: {e}')
+        return
+
+    runnable(validated_config, main)
+
+
+
+if __name__ == '__main__':
+    main()
