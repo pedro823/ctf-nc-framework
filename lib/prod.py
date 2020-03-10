@@ -1,7 +1,11 @@
 import socket
-from concurrent.futures import ThreadPoolExecutor
 import atexit
+from concurrent.futures import ThreadPoolExecutor
 from collections import deque
+from typing import NoReturn, Callable
+
+from .types import IStdin, IStdout
+from .validate_config import Config
 
 class SocketWrapper:
     class Stdin:
@@ -62,8 +66,8 @@ def answer_request(main, connection, address):
     finally:
         connection.close()
 
-def run_prod(config, main):
-    pool = ThreadPoolExecutor(10)
+def run_prod(config: Config, main: Callable[[IStdin, IStdout], None]) -> NoReturn:
+    pool = ThreadPoolExecutor(config.CTFNC_MAX_CONN)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((config.CTFNC_BIND, config.CTFNC_PORT))
     sock.listen()
