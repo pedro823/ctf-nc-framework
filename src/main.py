@@ -5,6 +5,6 @@ def main(stdin: IStdin, stdout: IStdout):
 
     stdout.write('What is your name?')
     stdout.flush()
-    name = stdin.readline.strip()
+    name = stdin.readline().strip()
 
     stdout.write(f'Hello, {name}!\n')
